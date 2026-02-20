@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Downloader — THE CRIS IF</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@400;600;700&display=swap');
+
+:root {
+  --pink: #ff2d55;
+  --pink2: #ff6b81;
+  --dark: #080808;
+  --dark2: #111111;
+  --dark3: #1a1a1a;
+  --border: rgba(255,45,85,0.2);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family:'Rajdhani',sans-serif;
+  background:var(--dark);
+  min-height:100vh;
+  color:white;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px 12px 60px;
+  overflow-x:hidden;
+}
+
+/* Fondo animado */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse at 10% 20%, rgba(255,45,85,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 80%, rgba(255,45,85,0.05) 0%, transparent 50%);
+  pointer-events:none;
+  animation:bgPulse 6s ease-in-out infinite alternate;
+}
+
+@keyframes bgPulse {
+  from { opacity:0.5; }
+  to   { opacity:1; }
+}
+
+/* HEADER */
+.header {
+  text-align:center;
+  margin-bottom:36px;
+  animation:fadeDown 0.8s ease;
+}
+
+@keyframes fadeDown {
+  from { opacity:0; transform:translateY(-30px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.logo {
+  font-size:3rem;
+  margin-bottom:8px;
+  animation:bounce 2s infinite;
+  display:block;
+}
+
+@keyframes bounce {
+  0%,100% { transform:translateY(0); }
+  50%      { transform:translateY(-8px); }
+}
+
+.title {
+  font-family:'Black Ops One',cursive;
+  font-size:clamp(1.8rem,6vw,3rem);
+  background:linear-gradient(135deg,#fff 0%,var(--pink) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  letter-spacing:0.05em;
+}
+
+.subtitle {
+  font-size:0.85rem;
+  color:rgba(255,255,255,0.35);
+  letter-spacing:0.3em;
+  margin-top:4px;
+  font-weight:600;
+}
+
+.badge {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(255,45,85,0.1);
+  border:1px solid rgba(255,45,85,0.3);
+  color:var(--pink2);
+  font-size:0.7rem;
+  letter-spacing:0.15em;
+  padding:4px 14px;
+  border-radius:20px;
+  margin-top:10px;
+  font-weight:700;
+}
+
+/* CARD PRINCIPAL */
+.card {
+  background:var(--dark3);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:32px 24px;
+  width:100%;
+  max-width:600px;
+  box-shadow:0 0 60px rgba(255,45,85,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
+  animation:fadeUp 0.8s ease 0.2s both;
+  position:relative;
+  overflow:hidden;
+}
+
+.card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--pink),transparent);
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(40px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* INPUT URL */
+.input-wrap {
+  position:relative;
+  margin-bottom:16px;
+}
+
+.url-input {
+  width:100%;
+  padding:16px 20px;
+  padding-right:56px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:rgba(0,0,0,0.4);
+  color:white;
+  font-family:'Rajdhani',sans-serif;
+  font-size:1rem;
+  font-weight:600;
+  outline:none;
+  transition:all 0.3s;
+  letter-spacing:0.02em;
+}
+
+.url-input:focus {
+  border-color:var(--pink);
+  box-shadow:0 0 20px rgba(255,45,85,0.15);
+}
+
+.url-input::placeholder { color:rgba(255,255,255,0.2); }
+
+.paste-btn {
+  position:absolute; right:12px; top:50%;
+  transform:translateY(-50%);
+  background:none; border:none;
+  color:rgba(255,45,85,0.6);
+  font-size:1.3rem; cursor:pointer;
+  transition:color 0.2s;
+  padding:4px;
+}
+
+.paste-btn:hover { color:var(--pink); }
+
+/* BOTÓN DESCARGAR */
+.btn-download {
+  width:100%;
+  padding:16px;
+  border-radius:14px;
+  border:none;
+  background:linear-gradient(135deg,var(--pink),#c0003a);
+  color:white;
+  font-family:'Black Ops One',cursive;
+  font-size:1.1rem;
+  letter-spacing:0.1em;
+  cursor:pointer;
+  transition:all 0.3s;
+  box-shadow:0 4px 30px rgba(255,45,85,0.3);
+  position:relative;
+  overflow:hidden;
+}
+
+.btn-download::before {
+  content:'';
+  position:absolute; top:-50%; left:-60%;
+  width:40%; height:200%;
+  background:rgba(255,255,255,0.15);
+  transform:skewX(-20deg);
+  transition:left 0.5s;
+}
+
+.btn-download:hover::before { left:120%; }
+.btn-download:hover { transform:translateY(-2px); box-shadow:0 8px 40px rgba(255,45,85,0.5); }
+.btn-download:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+/* ESTADO */
+#status {
+  display:none;
+  margin-top:20px;
+  padding:16px 20px;
+  border-radius:12px;
+  font-weight:600;
+  font-size:0.95rem;
+  letter-spacing:0.05em;
+  animation:fadeUp 0.4s ease;
+}
+
+.status-loading {
+  background:rgba(255,165,0,0.08);
+  border:1px solid rgba(255,165,0,0.2);
+  color:#ffaa00;
+}
+
+.status-ok {
+  background:rgba(0,255,136,0.08);
+  border:1px solid rgba(0,255,136,0.2);
+  color:#00ff88;
+}
+
+.status-error {
+  background:rgba(255,45,85,0.08);
+  border:1px solid rgba(255,45,85,0.2);
+  color:var(--pink2);
+}
+
+/* RESULTADO */
+#result {
+  display:none;
+  margin-top:20px;
+  background:rgba(0,0,0,0.3);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;
+  overflow:hidden;
+  animation:fadeUp 0.5s ease;
+}
+
+.result-thumb {
+  width:100%;
+  aspect-ratio:16/9;
+  object-fit:cover;
+  display:block;
+}
+
+.result-info {
+  padding:16px 20px;
+}
+
+.result-title {
+  font-size:1rem;
+  font-weight:700;
+  color:white;
+  margin-bottom:6px;
+  line-height:1.4;
+}
+
+.result-meta {
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+
+.meta-tag {
+  font-size:0.75rem;
+  color:rgba(255,255,255,0.4);
+  font-weight:600;
+  letter-spacing:0.1em;
+}
+
+.meta-tag span { color:var(--pink2); }
+
+.btn-dl-video {
+  width:100%;
+  padding:13px;
+  border-radius:10px;
+  border:1px solid var(--pink);
+  background:rgba(255,45,85,0.1);
+  color:var(--pink2);
+  font-family:'Black Ops One',cursive;
+  font-size:0.9rem;
+  letter-spacing:0.1em;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+
+.btn-dl-video:hover {
+  background:rgba(255,45,85,0.2);
+  box-shadow:0 0 20px rgba(255,45,85,0.2);
+  transform:translateY(-1px);
+}
+
+/* SPINNER */
+.spinner {
+  display:inline-block;
+  width:16px; height:16px;
+  border:2px solid rgba(255,165,0,0.3);
+  border-top-color:#ffaa00;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+  vertical-align:middle;
+  margin-right:8px;
+}
+
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* FEATURES */
+.features {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin-top:24px;
+  margin-bottom:0;
+}
+
+.feature {
+  text-align:center;
+  padding:14px 8px;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px;
+}
+
+.feature-icon { font-size:1.5rem; display:block; margin-bottom:4px; }
+.feature-text { font-size:0.7rem; color:rgba(255,255,255,0.35); letter-spacing:0.05em; font-weight:600; }
+
+/* FOOTER */
+.footer {
+  margin-top:30px;
+  text-align:center;
+  color:rgba(255,255,255,0.15);
+  font-size:0.75rem;
+  letter-spacing:0.1em;
+  font-weight:600;
+}
+
+.footer span { color:var(--pink); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="logo">🎵</span>
+  <div class="title">TIKTOK DOWNLOADER</div>
+  <div class="subtitle">THE CRIS IF EDITION</div>
+  <div class="badge">✨ SIN MARCA DE AGUA • GRATIS</div>
+</div>
+
+<div class="card">
+
+  <div class="input-wrap">
+    <input class="url-input" id="url-input" type="text"
+           placeholder="Pega el link de TikTok aquí..."
+           onkeydown="if(event.key==='Enter') descargar()">
+    <button class="paste-btn" onclick="pegar()" title="Pegar">📋</button>
+  </div>
+
+  <button class="btn-download" id="btn-dl" onclick="descargar()">
+    ⬇️ OBTENER VIDEO
+  </button>
+
+  <div id="status"></div>
+  <div id="result"></div>
+
+  <div class="features">
+    <div class="feature">
+      <span class="feature-icon">🚫</span>
+      <div class="feature-text">SIN MARCA<br>DE AGUA</div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">📱</span>
+      <div class="feature-text">HD<br>CALIDAD</div>
+    </div>
+    <div class="feature">
+      <span class="feature-icon">⚡</span>
+      <div class="feature-text">RÁPIDO<br>Y GRATIS</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Hecho con ❤️ por <span>THE CRIS IF</span>
+</div>
+
+<script>
+async function pegar() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById("url-input").value = text;
+  } catch(e) {
+    document.getElementById("url-input").focus();
+  }
+}
+
+function setStatus(tipo, msg) {
+  const el = document.getElementById("status");
+  el.style.display = "block";
+  el.className = "status-" + tipo;
+  el.innerHTML = msg;
+}
+
+function setResult(data) {
+  const el = document.getElementById("result");
+  el.style.display = "block";
+
+  const thumb = data.cover ? `<img class="result-thumb" src="${data.cover}" onerror="this.style.display='none'">` : "";
+  const dur   = data.duration ? `<div class="meta-tag">⏱️ <span>${data.duration}s</span></div>` : "";
+  const autor = data.author?.nickname ? `<div class="meta-tag">👤 <span>@${data.author.nickname}</span></div>` : "";
+
+  el.innerHTML = `
+    ${thumb}
+    <div class="result-info">
+      <div class="result-title">${data.title || "Video TikTok"}</div>
+      <div class="result-meta">
+        ${autor}
+        ${dur}
+        <div class="meta-tag">📹 <span>Sin marca de agua</span></div>
+      </div>
+      <button class="btn-dl-video" onclick="descargarVideo('${data.hdplay || data.play}', 'tiktok_video.mp4')">
+        ⬇️ DESCARGAR VIDEO HD
+      </button>
+    </div>
+  `;
+}
+
+function descargarVideo(url, nombre) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nombre;
+  a.target = "_blank";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+async function descargar() {
+  const url = document.getElementById("url-input").value.trim();
+  const btn  = document.getElementById("btn-dl");
+
+  if(!url) {
+    setStatus("error","❌ Pega un link de TikTok primero");
+    return;
+  }
+
+  if(!url.includes("tiktok.com") && !url.includes("vm.tiktok") && !url.includes("vt.tiktok")) {
+    setStatus("error","❌ El link debe ser de TikTok");
+    return;
+  }
+
+  btn.disabled = true;
+  document.getElementById("result").style.display = "none";
+  setStatus("loading", '<span class="spinner"></span> Obteniendo video...');
+
+  try {
+    const api = "https://www.tikwm.com/api/";
+    const form = new FormData();
+    form.append("url", url);
+    form.append("hd", "1");
+
+    const resp = await fetch(api, { method:"POST", body: form });
+    const data = await resp.json();
+
+    if(data.code === 0 && data.data) {
+      setStatus("ok", "✅ Video encontrado — toca el botón para descargar");
+      setResult(data.data);
+    } else {
+      setStatus("error","❌ No se pudo obtener el video. Intenta con otro link.");
+    }
+  } catch(e) {
+    setStatus("error","❌ Error de conexión. Intenta de nuevo.");
+  }
+
+  btn.disabled = false;
+}
+</script>
+
+</body>
+</html>
