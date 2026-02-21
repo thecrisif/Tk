@@ -468,8 +468,9 @@ async function descargar() {
     const data = await resp.json();
 
     if(data.code === 0 && data.data) {
-      setStatus("ok", "✅ Video encontrado — toca el botón para descargar");
+      setStatus("ok", "✅ Descargando video...");
       setResult(data.data);
+      descargarVideo(data.data.hdplay || data.data.play, 'tiktok_thecrisif.mp4');
     } else {
       setStatus("error","❌ No se pudo obtener el video. Intenta con otro link.");
     }
