@@ -409,6 +409,7 @@ function setStatus(tipo, msg) {
 function setResult(data) {
   const el = document.getElementById("result");
   el.style.display = "block";
+  const videoUrl = data.hdplay || data.play;
 
   const thumb = data.cover ? `<img class="result-thumb" src="${data.cover}" onerror="this.style.display='none'">` : "";
   const dur   = data.duration ? `<div class="meta-tag">⏱️ <span>${data.duration}s</span></div>` : "";
@@ -423,9 +424,15 @@ function setResult(data) {
         ${dur}
         <div class="meta-tag">📹 <span>Sin marca de agua</span></div>
       </div>
-      <button class="btn-dl-video" onclick="descargarVideo('${data.hdplay || data.play}', 'tiktok_video.mp4')">
-        ⬇️ DESCARGAR VIDEO HD
+      <button class="btn-dl-video" onclick="window.open('${videoUrl}', '_blank')">
+        ▶️ ABRIR VIDEO
       </button>
+      <div style="margin-top:12px; padding:12px 14px; background:rgba(255,170,0,0.08); border:1px solid rgba(255,170,0,0.2); border-radius:10px; font-size:0.82rem; color:#ffaa00; line-height:1.7;">
+        📲 <b>Para guardar en tu celular:</b><br>
+        1. Toca <b>"ABRIR VIDEO"</b><br>
+        2. Mantén presionado el video<br>
+        3. Toca <b>"Guardar video"</b> o <b>"Descargar"</b>
+      </div>
     </div>
   `;
 }
@@ -468,9 +475,8 @@ async function descargar() {
     const data = await resp.json();
 
     if(data.code === 0 && data.data) {
-      setStatus("ok", "✅ Descargando video...");
+      setStatus("ok", "✅ Video encontrado — toca el botón para descargar");
       setResult(data.data);
-      descargarVideo(data.data.hdplay || data.data.play, 'tiktok_thecrisif.mp4');
     } else {
       setStatus("error","❌ No se pudo obtener el video. Intenta con otro link.");
     }
