@@ -613,19 +613,19 @@ async function downloadBlob(url, filename, btnEl) {
 
 /* ─────────── Render result ─────────── */
 function renderResult(data) {
-  var hdUrl    = data.hdplay    || data.play         || '';
-  var normUrl  = data.play      || data.hdplay       || '';
-  var audioUrl = data.music     || data.wmplay       || '';
+  // Preferir play (H.264 compatible) sobre hdplay (puede ser H.265 en algunos videos)
+  // hdplay se ofrece como opción separada
+  var hdUrl    = data.hdplay    || '';
+  var normUrl  = data.play      || data.hdplay || '';
+  var audioUrl = data.music     || data.wmplay || '';
   var thumbUrl = data.cover     || data.origin_cover || '';
 
   var titleSafe = esc(data.title || 'Video de TikTok');
-  var nick      = esc((data.author && data.author.nickname)  || '');
   var uid       = esc((data.author && data.author.unique_id) || '');
-  var dur       = data.duration   ? data.duration + 's'                              : '';
-  var plays     = data.play_count  ? '▶ ' + Number(data.play_count).toLocaleString() : '';
-  var likes     = data.digg_count  ? '❤️ ' + Number(data.digg_count).toLocaleString(): '';
+  var dur       = data.duration    ? data.duration + 's'                               : '';
+  var plays     = data.play_count  ? '▶ ' + Number(data.play_count).toLocaleString()  : '';
+  var likes     = data.digg_count  ? '❤️ ' + Number(data.digg_count).toLocaleString() : '';
 
-  /* Thumb */
   var thumbHTML = thumbUrl
     ? '<div class="thumb-wrap">' +
         '<img class="thumb-img" src="' + esc(thumbUrl) + '" alt="Miniatura" loading="lazy" onerror="this.closest(\'.thumb-wrap\').style.display=\'none\'">' +
@@ -634,7 +634,6 @@ function renderResult(data) {
       '</div>'
     : '';
 
-  /* Meta chips */
   var chips = [
     uid   ? '<span class="meta-chip">👤 <b>@' + uid + '</b></span>'  : '',
     dur   ? '<span class="meta-chip">⏱ <b>' + dur + '</b></span>'    : '',
@@ -642,13 +641,14 @@ function renderResult(data) {
     likes ? '<span class="meta-chip">' + likes + '</span>'             : '',
   ].filter(Boolean).join('');
 
-  /* DL buttons — use data-* attributes for URLs (no inline JS with URLs) */
-  var hdBtn = hdUrl
-    ? '<button class="dl-btn dl-btn-hd" data-url="' + esc(hdUrl) + '" data-name="' + esc(buildName(data,'hd')) + '">🔥 Descargar HD / Alta Calidad</button>'
+  // Botón NORMAL primero — H.264, compatible con todos los Android
+  var normBtn = normUrl
+    ? '<button class="dl-btn dl-btn-hd" data-url="' + esc(normUrl) + '" data-name="' + esc(buildName(data,'normal')) + '">✅ Descargar (Compatible Android)</button>'
     : '';
 
-  var normBtn = (normUrl && normUrl !== hdUrl)
-    ? '<button class="dl-btn dl-btn-normal" data-url="' + esc(normUrl) + '" data-name="' + esc(buildName(data,'normal')) + '">📹 Descargar Calidad Normal</button>'
+  // Botón HD — puede ser H.265, solo para dispositivos que lo soporten
+  var hdBtn = (hdUrl && hdUrl !== normUrl)
+    ? '<button class="dl-btn dl-btn-normal" data-url="' + esc(hdUrl) + '" data-name="' + esc(buildName(data,'hd')) + '">🔥 Descargar HD (si el anterior falla)</button>'
     : '';
 
   var audioBtn = audioUrl
@@ -661,19 +661,17 @@ function renderResult(data) {
     '<div class="result-body">' +
       '<div class="result-title">' + titleSafe + '</div>' +
       (chips ? '<div class="meta-row">' + chips + '</div>' : '') +
-      '<div class="dl-grid">' + hdBtn + normBtn + audioBtn + '</div>' +
-      '<div class="mobile-tip">📲 <b>¿No se descarga automáticamente?</b><br>Toca el botón → el video se abre → mantén presionado → "Guardar video"</div>' +
+      '<div class="dl-grid">' + normBtn + hdBtn + audioBtn + '</div>' +
+      '<div class="mobile-tip">⚠️ <b>¿El video sale corrupto o no reproduce?</b><br>Usa el botón <b>"Compatible Android"</b> — funciona en todos los dispositivos.<br>El botón HD puede fallar en algunos videos por codec H.265.</div>' +
     '</div>';
   box.style.display = 'block';
 
-  /* Bind download listeners */
   box.querySelectorAll('.dl-btn[data-url]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       downloadBlob(this.dataset.url, this.dataset.name, this);
     });
   });
 
-  /* Auto-trigger audio if selected */
   if (selectedQ === 'audio') {
     var ab = box.querySelector('.dl-btn-audio');
     if (ab) setTimeout(function () { ab.click(); }, 400);
@@ -687,45 +685,48 @@ async function descargar() {
   var rawUrl = document.getElementById('url-input').value.trim();
   var btn    = document.getElementById('btn-main');
 
-  if (!rawUrl) {
-    setStatus('error', '❌ Pega un enlace de TikTok primero');
-    return;
-  }
-
+  if (!rawUrl) { setStatus('error', '❌ Pega un enlace de TikTok primero'); return; }
   if (!/tiktok\.com|vm\.tiktok|vt\.tiktok/i.test(rawUrl)) {
-    setStatus('error', '❌ El enlace debe ser de TikTok (tiktok.com)');
+    setStatus('error', '❌ El enlace debe ser de TikTok');
     return;
   }
 
-  /* Lock */
   isWorking    = true;
   btn.disabled = true;
   document.getElementById('result-box').style.display = 'none';
   setProgress(null);
-  setStatus('loading', '<span class="spinner"></span> Obteniendo video en alta calidad...');
+  setStatus('loading', '<span class="spinner"></span> Obteniendo video...');
 
   try {
+    // API 1: tikwm con hd=1
     var form = new FormData();
     form.append('url', rawUrl);
     form.append('hd',  '1');
 
     var resp = await fetch('https://www.tikwm.com/api/', { method:'POST', body:form });
-    if (!resp.ok) throw new Error('API HTTP ' + resp.status);
-
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     var json = await resp.json();
 
     if (json.code === 0 && json.data) {
-      setStatus('ok', '✅ Video encontrado — elige la calidad y descarga');
+      setStatus('ok', '✅ Video encontrado — usa el botón <b>Compatible Android</b> para descargarlo sin errores');
       renderResult(json.data);
     } else {
-      setStatus('error', '❌ No se pudo obtener el video. Prueba con otro enlace.<br><small style="opacity:.65">' + esc(json.msg || '') + '</small>');
+      // API 2: tikwm sin hd como fallback
+      var form2 = new FormData();
+      form2.append('url', rawUrl);
+      var resp2 = await fetch('https://www.tikwm.com/api/', { method:'POST', body:form2 });
+      var json2 = await resp2.json();
+      if (json2.code === 0 && json2.data) {
+        setStatus('ok', '✅ Video encontrado');
+        renderResult(json2.data);
+      } else {
+        setStatus('error', '❌ No se pudo obtener el video. Prueba con otro enlace.');
+      }
     }
-
   } catch (err) {
     setStatus('error', '❌ Error de conexión. Verifica tu internet e intenta de nuevo.');
   }
 
-  /* Unlock */
   isWorking    = false;
   btn.disabled = false;
 }
