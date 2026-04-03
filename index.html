@@ -523,53 +523,91 @@ function buildName(data, tipo) {
   return 'crisif_' + safe + '_' + Date.now() + '.' + ext;
 }
 
-/* ─────────── Download via Blob ─────────── */
+/* ─────────── Proxy URLs para evitar CORS y archivos corruptos ─────────── */
+function proxyUrl(url) {
+  // Usamos allorigins como proxy para forzar headers correctos
+  return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+}
+
+/* ─────────── Descarga con múltiples métodos ─────────── */
 async function downloadBlob(url, filename, btnEl) {
   if (!url || !btnEl) return;
   var origHTML = btnEl.innerHTML;
 
   btnEl.disabled = true;
   btnEl.innerHTML = '<span class="spinner"></span> Descargando...';
-  setProgress(15);
+  setProgress(10);
 
-  try {
-    var resp = await fetch(url, { mode: 'cors' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    setProgress(55);
+  var isAudio = filename.endsWith('.mp3');
+  var mime    = isAudio ? 'audio/mpeg' : 'video/mp4';
 
-    var blob = await resp.blob();
-    setProgress(90);
+  /* ── Método 1: fetch directo ── */
+  async function metodo1() {
+    var r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('m1 ' + r.status);
+    setProgress(50);
+    var b = await r.blob();
+    return new Blob([b], { type: mime });
+  }
 
-    var mime = filename.endsWith('.mp3') ? 'audio/mpeg' : 'video/mp4';
-    var typedBlob = new Blob([blob], { type: mime });
-    var blobUrl   = URL.createObjectURL(typedBlob);
+  /* ── Método 2: fetch via proxy (fix archivos corruptos en Android) ── */
+  async function metodo2() {
+    var r = await fetch(proxyUrl(url));
+    if (!r.ok) throw new Error('m2 ' + r.status);
+    setProgress(50);
+    var b = await r.blob();
+    return new Blob([b], { type: mime });
+  }
 
+  /* ── Método 3: link directo con tikwm download endpoint ── */
+  async function metodo3() {
+    // tikwm tiene un endpoint /download que sirve con headers correctos
+    var dl = 'https://www.tikwm.com/video/media/hdplay/' +
+             url.split('/').pop().split('?')[0] + '.mp4';
+    var r = await fetch(dl, { mode: 'cors' });
+    if (!r.ok) throw new Error('m3 ' + r.status);
+    setProgress(50);
+    var b = await r.blob();
+    return new Blob([b], { type: mime });
+  }
+
+  var blob = null;
+  var methods = [metodo1, metodo2, metodo3];
+
+  for (var i = 0; i < methods.length; i++) {
+    try {
+      blob = await methods[i]();
+      if (blob && blob.size > 1000) break; // blob válido
+    } catch(e) { blob = null; }
+  }
+
+  setProgress(90);
+
+  if (blob && blob.size > 1000) {
+    /* Guardar como archivo */
+    var blobUrl = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href     = blobUrl;
-    a.download = filename;
+    a.href        = blobUrl;
+    a.download    = filename;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
-
     setTimeout(function () {
       document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
-    }, 8000);
+    }, 10000);
 
     setProgress(100);
     setTimeout(function () { setProgress(null); }, 1500);
-
     btnEl.innerHTML = '✅ ¡Guardado!';
-    setTimeout(function () {
-      btnEl.innerHTML = origHTML;
-      btnEl.disabled  = false;
-    }, 3500);
+    setTimeout(function () { btnEl.innerHTML = origHTML; btnEl.disabled = false; }, 3500);
 
-  } catch (err) {
+  } else {
+    /* Último recurso: abrir en nueva pestaña */
     setProgress(null);
     window.open(url, '_blank');
-    btnEl.innerHTML = origHTML;
-    btnEl.disabled  = false;
+    btnEl.innerHTML = '🔗 Abierto en navegador';
+    setTimeout(function () { btnEl.innerHTML = origHTML; btnEl.disabled = false; }, 3000);
   }
 }
 
